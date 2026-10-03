@@ -1,4 +1,4 @@
-// controller.hpp
+п»ї// controller.hpp
 #pragma once
 
 #include <string>
@@ -17,7 +17,7 @@ namespace smarthome
         Controller(std::string_view firmware);
         ~Controller();
 
-        // Содержательные методы
+        // РЎРѕРґРµСЂР¶Р°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹
         void RunDiagnostics();
         void ProcessData(float sensorValue);
 

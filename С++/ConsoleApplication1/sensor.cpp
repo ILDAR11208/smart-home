@@ -1,4 +1,4 @@
-// sensor.cpp
+ï»¿// sensor.cpp
 #include "sensor.hpp"
 #include <iostream>
 
@@ -8,12 +8,12 @@ namespace smarthome
     Sensor::Sensor(std::string_view name, float initialValue)
         : m_name{ name }, m_currentValue{ initialValue }, m_isOnline{ true }
     {
-        std::cout << "[Êîíñòðóêòîð] Äàò÷èê '" << m_name << "' ñîçäàí.\n";
+        std::cout << "[ÐšÐ¾Ð½ÑÑ‚Ñ€ÑƒÐºÑ‚Ð¾Ñ€] Ð”Ð°Ñ‚Ñ‡Ð¸Ðº '" << m_name << "' ÑÐ¾Ð·Ð´Ð°Ð½.\n";
     }
 
     Sensor::~Sensor()
     {
-        std::cout << "[Äåñòðóêòîð] Äàò÷èê '" << m_name << "' óíè÷òîæåí.\n";
+        std::cout << "[Ð”ÐµÑÑ‚Ñ€ÑƒÐºÑ‚Ð¾Ñ€] Ð”Ð°Ñ‚Ñ‡Ð¸Ðº '" << m_name << "' ÑƒÐ½Ð¸Ñ‡Ñ‚Ð¾Ð¶ÐµÐ½.\n";
     }
 
     std::string_view Sensor::GetName() const
@@ -29,8 +29,8 @@ namespace smarthome
     void Sensor::SetConnectionStatus(bool status)
     {
         m_isOnline = status;
-        std::cout << "Äàò÷èê '" << m_name << "' èçìåíèë ñòàòóñ íà: "
-            << (m_isOnline ? "Îíëàéí" : "Îôëàéí") << "\n";
+        std::cout << "Ð”Ð°Ñ‚Ñ‡Ð¸Ðº '" << m_name << "' Ð¸Ð·Ð¼ÐµÐ½Ð¸Ð» ÑÑ‚Ð°Ñ‚ÑƒÑ Ð½Ð°: "
+            << (m_isOnline ? "ÐžÐ½Ð»Ð°Ð¹Ð½" : "ÐžÑ„Ð»Ð°Ð¹Ð½") << "\n";
     }
 
     float Sensor::ReadValue() const

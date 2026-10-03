@@ -1,4 +1,4 @@
-// sensor.hpp
+п»ї// sensor.hpp
 #pragma once
 
 #include <string>
@@ -21,7 +21,7 @@ namespace smarthome
         [[nodiscard]] std::string_view GetName() const;
         [[nodiscard]] bool IsOnline() const;
 
-        // Содержательные методы
+        // РЎРѕРґРµСЂР¶Р°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹
         void SetConnectionStatus(bool status);
         [[nodiscard]] float ReadValue() const;
     };

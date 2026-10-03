@@ -1,4 +1,4 @@
-// house.hpp
+п»ї// house.hpp
 #pragma once
 
 #include "controller.hpp"
@@ -13,14 +13,14 @@ namespace smarthome
     {
     private:
         std::string m_address;
-        Controller m_controller;      // КОМПОЗИЦИЯ: Часть целого (по значению)
-        Sensor* m_linkedSensor;       // АГРЕГАЦИЯ: Ссылка на внешний объект (через указатель)
+        Controller m_controller;      // РљРћРњРџРћР—РР¦РРЇ: Р§Р°СЃС‚СЊ С†РµР»РѕРіРѕ (РїРѕ Р·РЅР°С‡РµРЅРёСЋ)
+        Sensor* m_linkedSensor;       // РђР“Р Р•Р“РђР¦РРЇ: РЎСЃС‹Р»РєР° РЅР° РІРЅРµС€РЅРёР№ РѕР±СЉРµРєС‚ (С‡РµСЂРµР· СѓРєР°Р·Р°С‚РµР»СЊ)
 
     public:
         House(std::string_view address, std::string_view controllerFirmware);
         ~House();
 
-        // Содержательные методы
+        // РЎРѕРґРµСЂР¶Р°С‚РµР»СЊРЅС‹Рµ РјРµС‚РѕРґС‹
         void BindSensor(Sensor* sensor);
         void UpdateClimate();
     };

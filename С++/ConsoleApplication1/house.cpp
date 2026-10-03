@@ -1,4 +1,4 @@
-// house.cpp
+ï»¿// house.cpp
 #include "house.hpp"
 #include <iostream>
 
@@ -8,12 +8,12 @@ namespace smarthome
     House::House(std::string_view address, std::string_view controllerFirmware)
         : m_address{ address }, m_controller(controllerFirmware), m_linkedSensor{ nullptr }
     {
-        std::cout << "[Êîíñòðóêòîð] Äîì ïî àäðåñó '" << m_address << "' ïîñòðîåí.\n";
+        std::cout << "[ÐšÐ¾Ð½ÑÑ‚Ñ€ÑƒÐºÑ‚Ð¾Ñ€] Ð”Ð¾Ð¼ Ð¿Ð¾ Ð°Ð´Ñ€ÐµÑÑƒ '" << m_address << "' Ð¿Ð¾ÑÑ‚Ñ€Ð¾ÐµÐ½.\n";
     }
 
     House::~House()
     {
-        std::cout << "[Äåñòðóêòîð] Äîì ïî àäðåñó '" << m_address << "' ñíîñèòñÿ.\n";
+        std::cout << "[Ð”ÐµÑÑ‚Ñ€ÑƒÐºÑ‚Ð¾Ñ€] Ð”Ð¾Ð¼ Ð¿Ð¾ Ð°Ð´Ñ€ÐµÑÑƒ '" << m_address << "' ÑÐ½Ð¾ÑÐ¸Ñ‚ÑÑ.\n";
     }
 
     void House::BindSensor(Sensor* sensor)
@@ -21,27 +21,27 @@ namespace smarthome
         m_linkedSensor = sensor;
         if (m_linkedSensor != nullptr)
         {
-            std::cout << "Äîì: Äàò÷èê '" << m_linkedSensor->GetName() << "' óñïåøíî ïðèâÿçàí ê ñèñòåìå.\n";
+            std::cout << "Ð”Ð¾Ð¼: Ð”Ð°Ñ‚Ñ‡Ð¸Ðº '" << m_linkedSensor->GetName() << "' ÑƒÑÐ¿ÐµÑˆÐ½Ð¾ Ð¿Ñ€Ð¸Ð²ÑÐ·Ð°Ð½ Ðº ÑÐ¸ÑÑ‚ÐµÐ¼Ðµ.\n";
         }
     }
 
     void House::UpdateClimate()
     {
-        // ÏÐÎÂÅÐÊÀ ÏÐÀÂÈËÀ: Óñòðîéñòâà ìîãóò âûõîäèòü èç ñòðîÿ (Ñöåíàðèé 2)
+        // ÐŸÐ ÐžÐ’Ð•Ð ÐšÐ ÐŸÐ ÐÐ’Ð˜Ð›Ð: Ð£ÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð° Ð¼Ð¾Ð³ÑƒÑ‚ Ð²Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ÑŒ Ð¸Ð· ÑÑ‚Ñ€Ð¾Ñ (Ð¡Ñ†ÐµÐ½Ð°Ñ€Ð¸Ð¹ 2)
         if (m_linkedSensor == nullptr)
         {
-            std::cout << "Äîì [ÎØÈÁÊÀ]: Íåò ïðèâÿçàííîãî äàò÷èêà! Îòêàç âûïîëíåíèÿ.\n";
+            std::cout << "Ð”Ð¾Ð¼ [ÐžÐ¨Ð˜Ð‘ÐšÐ]: ÐÐµÑ‚ Ð¿Ñ€Ð¸Ð²ÑÐ·Ð°Ð½Ð½Ð¾Ð³Ð¾ Ð´Ð°Ñ‚Ñ‡Ð¸ÐºÐ°! ÐžÑ‚ÐºÐ°Ð· Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ñ.\n";
             return;
         }
 
         if (!m_linkedSensor->IsOnline())
         {
-            std::cout << "Äîì [ÎØÈÁÊÀ]: Äàò÷èê '" << m_linkedSensor->GetName()
-                << "' íå îòâå÷àåò! Îòêàç âûïîëíåíèÿ êîìàíäû êëèìàò-êîíòðîëÿ.\n";
+            std::cout << "Ð”Ð¾Ð¼ [ÐžÐ¨Ð˜Ð‘ÐšÐ]: Ð”Ð°Ñ‚Ñ‡Ð¸Ðº '" << m_linkedSensor->GetName()
+                << "' Ð½Ðµ Ð¾Ñ‚Ð²ÐµÑ‡Ð°ÐµÑ‚! ÐžÑ‚ÐºÐ°Ð· Ð²Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹ ÐºÐ»Ð¸Ð¼Ð°Ñ‚-ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»Ñ.\n";
             return;
         }
 
-        std::cout << "Äîì: Ñ÷èòûâàíèå äàííûõ ñ äàò÷èêà...\n";
+        std::cout << "Ð”Ð¾Ð¼: Ð¡Ñ‡Ð¸Ñ‚Ñ‹Ð²Ð°Ð½Ð¸Ðµ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ñ Ð´Ð°Ñ‚Ñ‡Ð¸ÐºÐ°...\n";
         float val = m_linkedSensor->ReadValue();
         m_controller.ProcessData(val);
     }
