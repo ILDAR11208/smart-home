@@ -1,129 +1,125 @@
-using System.Runtime.CompilerServices;
+#nullable enable
+using System;
+using static System.Math; // Разумное использование using: статические члены без имени класса
+using DeviceList = System.Collections.Generic.List<SmartHome.BaseDevice>; // Псевдоним длинного типа
 using SmartHome;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-// ===================================================================
-Console.WriteLine("=== 1. КОМПОЗИЦИЯ, АГРЕГАЦИЯ И ПРОВЕРКА ПРАВИЛ ===\n");
-// ===================================================================
+Console.WriteLine("==================================================================");
+Console.WriteLine("     ЛАБОРАТОРНАЯ РАБОТА № 4: НАСЛЕДОВАНИЕ И ПОЛИМОРФИЗМ (C#)     ");
+Console.WriteLine("==================================================================\n");
 
-// Создаём датчик (живёт независимо от дома)
-var sensor = new Sensor("Термометр-01", 22.5f);
-Console.WriteLine($"  {sensor}\n");
+// =========================================================================
+// 1. ИЕРАРХИЯ КЛАССОВ И ВЫЗОВ КОНСТРУКТОРОВ
+// =========================================================================
+Console.WriteLine("=== 1. ИЕРАРХИЯ КЛАССОВ И ВЫЗОВ КОНСТРУКТОРОВ БАЗЫ ===");
+var kitchen = new Room("Кухня");
+var tempSensor = new TemperatureSensor("Термометр-Кухня", kitchen, 23.5, "SN-TMP-101");
+Console.WriteLine($"-> Создан объект: {tempSensor}");
+Console.WriteLine("   (В конструкторе вызван base(name, room) для базовой части)\n");
 
-// Создаём дом — контроллер создаётся внутри (КОМПОЗИЦИЯ)
-var house = new House("ул. Пушкина, д. 10", "3.1.4");
-Console.WriteLine();
+// =========================================================================
+// 2. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (override) И sealed
+// =========================================================================
+Console.WriteLine("=== 2. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (С ВЫЗОВОМ БАЗЫ И БЕЗ) ===");
+var balcony = new Room("Балкон");
+var tempBalcony = new TemperatureSensor("Термометр-Балкон", balcony, -8.0, "SN-TMP-202");
+var motionBalcony = new MotionSensor("Радар-Балкон", balcony, 4);
 
-// Привязываем датчик к дому (АГРЕГАЦИЯ)
-house.BindSensor(sensor);
-Console.WriteLine();
+Console.WriteLine("\n1) Переопределение С вызовом базового класса (base.Describe()):");
+Console.WriteLine($"   {tempBalcony.Describe()}");
 
-// Нормальная работа
-house.UpdateClimate();
-Console.WriteLine();
+Console.WriteLine("\n2) Переопределение БЕЗ вызова базового класса (полная замена):");
+Console.WriteLine($"   {motionBalcony.Describe()}");
+Console.WriteLine("   (Класс MotionSensor объявлен как sealed — запрет дальнейшего наследования)\n");
 
-// Отключаем датчик — проверка правил
-sensor.IsOnline = false;
-house.UpdateClimate();
-Console.WriteLine();
+// =========================================================================
+// 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ
+// =========================================================================
+Console.WriteLine("=== 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ ===");
 
-// «Уничтожаем» дом — убираем ссылку
-house = null!;
-Console.WriteLine("Дом удалён (ссылка обнулена).");
-Console.WriteLine($"Датчик всё ещё существует: {sensor}");
-Console.WriteLine("  → Это доказывает агрегацию: датчик живёт независимо от дома.\n");
+// 3а. Поверхностная копия (MemberwiseClone)
+Console.WriteLine("\n--- 3а. Поверхностная копия (ShallowCopy / MemberwiseClone) ---");
+var roomLiving = new Room("Гостиная");
+var sensorOrig = new TemperatureSensor("Оригинал-Датчик", roomLiving, 21.0, "SN-ORIG-01");
+var shallowCopy = sensorOrig.ShallowCopy();
 
-// ===================================================================
-Console.WriteLine("=== 2. ССЫЛКИ И КОПИИ ===\n");
-// ===================================================================
+Console.WriteLine($"ДО изменения:      Оригинал={sensorOrig.Room.Name}, Копия={shallowCopy.Room.Name}");
+shallowCopy.RenameRoom("Столовая"); // Меняем комнату у копии
+Console.WriteLine($"ПОСЛЕ изменения:   Оригинал={sensorOrig.Room.Name}, Копия={shallowCopy.Room.Name}");
+Console.WriteLine("-> Обе переменные ссылаются на ОДИН И ТОТ ЖЕ объект Room! Это поверхностная копия.");
 
-// --- 2a. Ссылочный тип (class) ---
-Console.WriteLine("--- Ссылочный тип (class Sensor) ---");
-var sensorA = new Sensor("Влажность-01", 55.0f);
-var sensorB = sensorA;   // обе переменные ссылаются на ОДИН объект
+// 3б. Глубокая копия
+Console.WriteLine("\n--- 3б. Глубокая копия (DeepCopy) ---");
+var deepCopy = sensorOrig.DeepCopy();
+Console.WriteLine($"ДО изменения:      Оригинал={sensorOrig.Room.Name}, ГлубокаяКопия={deepCopy.Room.Name}");
+deepCopy.RenameRoom("Спальня"); // Меняем комнату у глубокой копии
+Console.WriteLine($"ПОСЛЕ изменения:   Оригинал={sensorOrig.Room.Name}, ГлубокаяКопия={deepCopy.Room.Name}");
+Console.WriteLine("-> Оригинал НЕ изменился! У копии собственный экземпляр Room. Это глубокая копия.\n");
 
-Console.WriteLine($"  sensorA: {sensorA}");
-Console.WriteLine($"  sensorB: {sensorB}");
+// =========================================================================
+// 4. СРАВНЕНИЕ ПО СОДЕРЖИМОМУ (Equals и GetHashCode)
+// =========================================================================
+Console.WriteLine("=== 4. СРАВНЕНИЕ ПО СОДЕРЖИМОМУ (Equals и GetHashCode) ===");
+var s1 = new TemperatureSensor("Датчик А", new Room("Зал"), 20.0, "SN-777");
+var s2 = new TemperatureSensor("Датчик Б (другое имя и комната)", new Room("Склад"), 25.0, "SN-777");
+var s3 = new TemperatureSensor("Датчик В", new Room("Зал"), 20.0, "SN-888");
 
-sensorB.SetValue(99.9f);
-Console.WriteLine("\n  Изменили значение через sensorB на 99.9:");
-Console.WriteLine($"  sensorA: {sensorA}");
-Console.WriteLine($"  sensorB: {sensorB}");
-Console.WriteLine("  → Оба изменились, потому что class — ссылочный тип.\n");
+Console.WriteLine($"  s1 == s2 (по ссылкам): {ReferenceEquals(s1, s2)} (разные объекты)");
+Console.WriteLine($"  s1.Equals(s2) (по серийному номеру): {s1.Equals(s2)} (совпадает S/N)");
+Console.WriteLine($"  s1.Equals(s3) (по серийному номеру): {s1.Equals(s3)} (разные S/N)");
+Console.WriteLine($"  Хеш-коды: s1={s1.GetHashCode()}, s2={s2.GetHashCode()}, s3={s3.GetHashCode()}\n");
 
-// --- 2b. Значимый тип (struct) ---
-Console.WriteLine("--- Значимый тип (struct Money) ---");
-var original = new Money { Rubles = 100, Kopecks = 50 };
-var copy = original;   // создаётся КОПИЯ
+// =========================================================================
+// 5. ИСПОЛЬЗОВАНИЕ this И СТАТИЧЕСКИЕ ЧЛЕНЫ
+// =========================================================================
+Console.WriteLine("=== 5. ИСПОЛЬЗОВАНИЕ this И СТАТИЧЕСКИЕ ЧЛЕНЫ ===");
+// Вызов другого конструктора через : this(...)
+var defaultSensor = new TemperatureSensor("Датчик-Авто", new Room("Коридор"));
+Console.WriteLine($"  Конструктор по умолчанию через this: {defaultSensor}");
 
-Console.WriteLine($"  Оригинал: {original}");
-Console.WriteLine($"  Копия:    {copy}");
+// Передача this в другой метод
+var garage = new Room("Гараж");
+defaultSensor.AttachToRoom(garage);
 
-copy.Rubles = 999;
-copy.Kopecks = 0;
-Console.WriteLine("\n  Изменили копию на 999 руб. 0 коп.:");
-Console.WriteLine($"  Оригинал: {original}");
-Console.WriteLine($"  Копия:    {copy}");
-Console.WriteLine("  → Оригинал не изменился, потому что struct — значимый тип.");
-Console.WriteLine("    При присваивании struct копируются все поля (побитовая копия).\n");
+// Статические члены
+Console.WriteLine($"  Всего создано устройств (BaseDevice.TotalDevices): {BaseDevice.TotalDevices}");
+Console.WriteLine($"  Следующий номер (BaseDevice.NextId()): {BaseDevice.NextId()}\n");
 
-// ===================================================================
-Console.WriteLine("=== 3. ОСВОБОЖДЕНИЕ РЕСУРСА (IDisposable + using) ===\n");
-// ===================================================================
+// =========================================================================
+// 6. РАЗУМНОЕ ИСПОЛЬЗОВАНИЕ using
+// =========================================================================
+Console.WriteLine("=== 6. РАЗУМНОЕ ИСПОЛЬЗОВАНИЕ using ===");
+// using static (использован в начале файла: using static System.Math)
+double roundedTemp = Round(23.456, 1); // Math.Round без имени класса
+Console.WriteLine($"  using static: Round(23.456, 1) = {roundedTemp}");
 
-using (var log = new IssueLog("Аварии отопления"))
+// using var (автоматический вызов Dispose в конце области видимости)
 {
-    log.Write("Котёл перегрелся в 14:30");
-    log.Write("Давление упало ниже нормы");
-    Console.WriteLine("  (выходим из блока using — Dispose вызовется автоматически)");
+    using var log = new DeviceLog("Системный аудит");
+    log.Log("Зафиксировано превышение температуры на 1.5 градуса.");
+    log.Log("Команда климат-контроля отправлена.");
 }
 
-Console.WriteLine("  → Dispose() вызван автоматически при выходе из блока using.");
-Console.WriteLine("    Это аналог RAII / деструктора в C++ для управления ресурсами.\n");
-
-// ===================================================================
-Console.WriteLine("=== 4. СБОРЩИК МУСОРА ===\n");
-// ===================================================================
-
-var weakRef = CreateTemporary();
-
-Console.WriteLine("  Объект создан во вспомогательном методе и вышел из области видимости.");
-Console.WriteLine("  Вызываем GC.Collect() + GC.WaitForPendingFinalizers()...\n");
-
-GC.Collect();
-GC.WaitForPendingFinalizers();
-GC.Collect();
-
-if (weakRef.TryGetTarget(out var alive))
+// =========================================================================
+// 7. ПОЛИМОРФНЫЙ СПИСОК (псевдоним DeviceList)
+// =========================================================================
+Console.WriteLine("\n=== 7. ПОЛИМОРФНЫЙ СПИСОК (DeviceList) ===");
+var house = new Room("Коттедж");
+var devices = new DeviceList
 {
-    Console.WriteLine($"  Объект ещё жив: {alive}");
-}
-else
+    new TemperatureSensor("Термометр холла", house, 21.5, "SN-H-01"),
+    new MotionSensor("Датчик движения холла", house, 7),
+    new TemperatureSensor("Термометр кухни", house, 24.0, "SN-K-02")
+};
+
+Console.WriteLine("Обход устройств через абстрактный базовый класс BaseDevice:");
+foreach (var device in devices)
 {
-    Console.WriteLine("  Объект был собран сборщиком мусора (WeakReference.TryGetTarget → false).");
+    Console.WriteLine($"  • {device.Describe()} [Интервал опроса: {device.PollInterval} сек.]");
 }
 
-Console.WriteLine();
-Console.WriteLine("  Сравнение с C++:");
-Console.WriteLine("    • В C++ деструктор вызывается детерминированно:");
-Console.WriteLine("      – для стековых объектов — при выходе из области видимости;");
-Console.WriteLine("      – для кучи — при вызове delete.");
-Console.WriteLine("    • В C# (CLR) точный момент уничтожения объекта НЕ определён.");
-Console.WriteLine("      Сборщик мусора сам решает, когда освободить память.");
-Console.WriteLine("      Финализатор (~Sensor) может быть вызван значительно позже");
-Console.WriteLine("      или не вызван вовсе при завершении программы.");
-Console.WriteLine("    • Для детерминированного освобождения ресурсов в C# используют");
-Console.WriteLine("      интерфейс IDisposable + конструкцию using (см. раздел 3).");
-
-/// <summary>
-/// Создаёт временный Sensor и возвращает слабую ссылку на него.
-/// Атрибут NoInlining гарантирует, что локальная переменная
-/// не останется на стеке после возврата.
-/// </summary>
-[MethodImpl(MethodImplOptions.NoInlining)]
-static WeakReference<Sensor> CreateTemporary()
-{
-    var temp = new Sensor("Временный-GC", 0.0f);
-    return new WeakReference<Sensor>(temp);
-}
+Console.WriteLine("\n==================================================================");
+Console.WriteLine("                   ПРОГРАММА УСПЕШНО ЗАВЕРШЕНА                    ");
+Console.WriteLine("==================================================================");
