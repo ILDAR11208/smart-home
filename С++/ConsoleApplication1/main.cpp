@@ -1,7 +1,10 @@
 #include "base_device.hpp"
 #include "temperature_sensor.hpp"
 #include "motion_sensor.hpp"
-#include "string_utils.hpp"
+#include "passive_display.hpp"
+#include "smart_hub.hpp"
+#include "isecurity_policy.hpp"
+#include "exceptions.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -19,154 +22,135 @@ int main() {
 #endif
 
     std::cout << "==================================================================" << std::endl;
-    std::cout << "     ЛАБОРАТОРНАЯ РАБОТА № 4: НАСЛЕДОВАНИЕ И ПОЛИМОРФИЗМ (C++)    " << std::endl;
+    std::cout << "       ЛАБОРАТОРНАЯ РАБОТА № 5: ПОЛИМОРФИЗМ И ИНТЕРФЕЙСЫ (C++)    " << std::endl;
     std::cout << "==================================================================" << std::endl;
 
+    auto livingRoom = std::make_shared<Room>("Гостиная");
+    auto bedroom = std::make_shared<Room>("Спальня");
+
     // =========================================================================
-    // 1. ПОРЯДОК ВЫЗОВА КОНСТРУКТОРОВ И ДЕСТРУКТОРОВ
+    // 1. ИНТЕРФЕЙС И МНОЖЕСТВЕННОЕ НАСЛЕДОВАНИЕ
     // =========================================================================
-    std::cout << "\n=== 1. ПОРЯДОК ВЫЗОВА КОНСТРУКТОРОВ И ДЕСТРУКТОРОВ ===" << std::endl;
-    {
-        std::cout << "\n-- Создание объекта TemperatureSensor в блоке --" << std::endl;
-        auto kitchen = std::make_shared<Room>("Кухня");
-        TemperatureSensor tempSensor("Термометр-Кухня", kitchen, 24.5, "SN-TMP-101");
-        std::cout << "-- Выход из блока (разрушение объекта) --" << std::endl;
+    std::cout << "\n=== 1. ИНТЕРФЕЙС И МНОЖЕСТВЕННОЕ НАСЛЕДОВАНИЕ ===" << std::endl;
+    std::cout << "Классы TemperatureSensor и MotionSensor наследуются одновременно от:\n"
+              << "  1) Абстрактного класса BaseDevice (наследуют состояние и базовые поля)\n"
+              << "  2) Интерфейса IControllable (обязуются выполнить контракт удаленного управления)\n\n";
+
+    TemperatureSensor tempDev("Термометр-1", livingRoom, 22.5, "SN-T-501");
+    MotionSensor motionDev("Радар-1", livingRoom, 7);
+
+    // =========================================================================
+    // 2. ИСПОЛЬЗОВАНИЕ ИНТЕРФЕЙСА (КОНТРАКТ БЕЗ ЗНАНИЯ КОНКРЕТНЫХ КЛАССОВ)
+    // =========================================================================
+    std::cout << "\n=== 2. ИСПОЛЬЗОВАНИЕ ИНТЕРФЕЙСА (РАБОТА ЧЕРЕЗ КОНТРАКТ) ===" << std::endl;
+    // Создаем хаб с начальной стандартной политикой (статическое конфигурирование)
+    SmartHub hub("Центральный контроллер", std::make_unique<StandardSecurityPolicy>());
+
+    // Функция хаба принимает IControllable& — она ничего не знает о датчиках!
+    std::cout << "\nУправление термометром через интерфейс IControllable:" << std::endl;
+    hub.SendEmergencyCommand(tempDev, "CALIBRATE");
+
+    std::cout << "\nУправление радаром движения через интерфейс IControllable:" << std::endl;
+    hub.SendEmergencyCommand(motionDev, "SET_ZONE_ALARM");
+
+    // =========================================================================
+    // 3. РАННЕЕ И ПОЗДНЕЕ СВЯЗЫВАНИЕ
+    // =========================================================================
+    std::cout << "\n=== 3. РАННЕЕ И ПОЗДНЕЕ СВЯЗЫВАНИЕ ===" << std::endl;
+    std::unique_ptr<BaseDevice> polyDevice = std::make_unique<MotionSensor>("Охранный-Радар", bedroom, 8);
+
+    std::cout << "Вызов через указатель на базовый класс (std::unique_ptr<BaseDevice>):\n";
+    
+    // Раннее связывание: невиртуальный метод выбирается во время компиляции по типу указателя BaseDevice*
+    std::cout << "  1) Невиртуальный метод GetDeviceType():\n"
+              << "     -> Результат: \"" << polyDevice->GetDeviceType() << "\" (выбрана версия BaseDevice!)\n";
+
+    // Позднее связывание: виртуальный метод выбирается во время выполнения через vtable по типу объекта MotionSensor
+    std::cout << "  2) Виртуальный метод Describe():\n"
+              << "     -> Результат: \"" << polyDevice->Describe() << "\" (выбрана версия MotionSensor!)\n";
+
+    // =========================================================================
+    // 4. ПРОВЕРКА ТИПА ВО ВРЕМЯ ВЫПОЛНЕНИЯ (dynamic_cast)
+    // =========================================================================
+    std::cout << "\n=== 4. ПРОВЕРКА ТИПА ВО ВРЕМЯ ВЫПОЛНЕНИЯ (dynamic_cast) ===" << std::endl;
+    PassiveDisplay display("Инфо-Табло-01", livingRoom, "Температура: 22.5 C");
+
+    std::cout << "Попытка переключить состояние управляемого датчика:" << std::endl;
+    hub.TryToggleDevice(*polyDevice);
+
+    std::cout << "\nПопытка переключить состояние пассивного дисплея:" << std::endl;
+    hub.TryToggleDevice(display);
+
+    // =========================================================================
+    // 5. КОНФИГУРИРОВАНИЕ ОБЪЕКТА (ОБЪЕКТ ПОВЕДЕНИЯ / СТРАТЕГИЯ)
+    // =========================================================================
+    std::cout << "\n=== 5. КОНФИГУРИРОВАНИЕ ОБЪЕКТА (ОБЪЕКТ ПОВЕДЕНИЯ) ===" << std::endl;
+    std::cout << "-- 5.1. Статическое конфигурирование (политика была задана в конструкторе) --" << std::endl;
+    hub.RaiseAlarm("Входная дверь", 2);
+
+    std::cout << "\n-- 5.2. Динамическое конфигурирование (смена политики во время работы программы) --" << std::endl;
+    // Смена на усиленный режим
+    hub.SetSecurityPolicy(std::make_unique<StrictSecurityPolicy>());
+    hub.RaiseAlarm("Окно спальни", 5);
+
+    // Смена на ночной беззвучный режим
+    hub.SetSecurityPolicy(std::make_unique<SilentSecurityPolicy>());
+    hub.RaiseAlarm("Движение во дворе", 1);
+    std::cout << "-> Поведение хаба полностью изменилось благодаря подстановке разных объектов поведения!\n";
+
+    // =========================================================================
+    // 6. ИСКЛЮЧЕНИЯ ПРЕДМЕТНОЙ ОБЛАСТИ (try / catch / throw)
+    // =========================================================================
+    std::cout << "\n=== 6. ИСКЛЮЧЕНИЯ ПРЕДМЕТНОЙ ОБЛАСТИ (try, catch, throw) ===" << std::endl;
+
+    // Сценарий 6а: Успешная работа и корректные параметры
+    std::cout << "\n--- Сценарий 6а: Штатная работа без ошибок ---" << std::endl;
+    try {
+        tempDev.SetOnline(true);
+        tempDev.Ping(); // Успешный пинг
+        tempDev.SetTemperature(24.0); // Корректная температура
+        std::cout << "  Успешно: " << tempDev.Describe() << std::endl;
     }
-    std::cout << "-> Вывод доказывает: конструкторы вызываются от Базы к Наследнику,\n"
-              << "   а деструкторы — в обратном порядке: от Наследника к Базе.\n";
-
-    // =========================================================================
-    // 2. ВИРТУАЛЬНЫЙ ДЕСТРУКТОР
-    // =========================================================================
-    std::cout << "\n=== 2. ВИРТУАЛЬНЫЙ ДЕСТРУКТОР ===" << std::endl;
-    {
-        std::cout << "-- Создание MotionSensor через указатель на BaseDevice --" << std::endl;
-        auto hall = std::make_shared<Room>("Прихожая");
-        std::unique_ptr<BaseDevice> polyDevice = std::make_unique<MotionSensor>("ДатчикДвижения-Прихожая", hall, 8);
-
-        std::cout << "\n-- Вызов reset() (уничтожение через указатель на базовый класс) --" << std::endl;
-        polyDevice.reset();
-        std::cout << "-> Вывод доказывает: благодаря virtual ~BaseDevice() сначала сработал\n"
-                  << "   деструктор ~MotionSensor(), а затем ~BaseDevice(). Без virtual деструктор\n"
-                  << "   наследника не вызвался бы, что привело бы к утечке и UB!\n";
+    catch (const DeviceOfflineException& ex) {
+        std::cout << "  [ПЕРЕХВАЧЕНО ОФЛАЙН]: " << ex.what() << std::endl;
     }
-
-    // =========================================================================
-    // 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ
-    // =========================================================================
-    std::cout << "\n=== 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ ===" << std::endl;
-    {
-        auto livingRoom = std::make_shared<Room>("Гостиная");
-        TemperatureSensor original("Датчик-Оригинал", livingRoom, 22.0, "SN-ORIG-01");
-
-        std::cout << "\n-- Создание глубокой копии через конструктор копирования --" << std::endl;
-        TemperatureSensor deepCopy = original; // Создает собственный Room
-
-        std::cout << "\nСостояние ДО изменения:" << std::endl;
-        std::cout << "  Оригинал: " << original.Describe() << std::endl;
-        std::cout << "  Копия:    " << deepCopy.Describe() << std::endl;
-
-        std::cout << "\nИзменяем комнату у копии на 'Спальня':" << std::endl;
-        deepCopy.RenameRoom("Спальня");
-
-        std::cout << "\nСостояние ПОСЛЕ изменения комнаты у копии:" << std::endl;
-        std::cout << "  Оригинал: " << original.Describe() << std::endl;
-        std::cout << "  Копия:    " << deepCopy.Describe() << std::endl;
-        std::cout << "-> Исходный объект НЕ изменился! Это подтверждает глубокую копию (deep copy),\n"
-                  << "   так как копия владеет собственным независимым объектом Room.\n";
+    catch (const InvalidParameterException& ex) {
+        std::cout << "  [ПЕРЕХВАЧЕНА ОШИБКА ПАРАМЕТРА]: " << ex.what() << std::endl;
     }
-
-    // =========================================================================
-    // 4. КЛОНИРОВАНИЕ ЧЕРЕЗ БАЗОВЫЙ КЛАСС (Clone)
-    // =========================================================================
-    std::cout << "\n=== 4. КЛОНИРОВАНИЕ ЧЕРЕЗ БАЗОВЫЙ КЛАСС (Clone()) ===" << std::endl;
-    {
-        auto corridor = std::make_shared<Room>("Коридор");
-        std::unique_ptr<BaseDevice> item = std::make_unique<MotionSensor>("Датчик-Коридор", corridor, 9);
-
-        std::cout << "\nКлонируем объект через указатель BaseDevice->Clone():" << std::endl;
-        std::unique_ptr<BaseDevice> clonedItem = item->Clone();
-
-        std::cout << "  Оригинал: " << item->Describe() << std::endl;
-        std::cout << "  Клон:     " << clonedItem->Describe() << std::endl;
-        std::cout << "-> Метод Clone() вернул правильный наследник MotionSensor без срезки (slicing)!\n";
-    }
-
-    // =========================================================================
-    // 5. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (override) И final
-    // =========================================================================
-    std::cout << "\n=== 5. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (override) И final ===" << std::endl;
-    {
-        auto balcony = std::make_shared<Room>("Балкон");
-        TemperatureSensor temp("Термометр-Балкон", balcony, -12.3, "SN-BALK-01");
-        MotionSensor motion("ДатчикДвижения-Балкон", balcony, 3);
-
-        std::cout << "\n1) Переопределение С вызовом базового класса (TemperatureSensor):" << std::endl;
-        std::cout << "   " << temp.Describe() << std::endl;
-
-        std::cout << "\n2) Переопределение БЕЗ вызова базового класса (MotionSensor, final):" << std::endl;
-        std::cout << "   " << motion.Describe() << std::endl;
-        std::cout << "-> Класс MotionSensor помечен как final (запрет дальнейшего наследования).\n";
-    }
-
-    // =========================================================================
-    // 6. ИСПОЛЬЗОВАНИЕ УКАЗАТЕЛЯ this
-    // =========================================================================
-    std::cout << "\n=== 6. ИСПОЛЬЗОВАНИЕ УКАЗАТЕЛЯ this ===" << std::endl;
-    {
-        auto office = std::make_shared<Room>("Кабинет");
-        TemperatureSensor sensorA("Термометр-Кабинет", office, 21.0, "SN-OFFICE-01");
-
-        std::cout << "\nа) Проверка самоприсваивания через this (sensorA = sensorA):" << std::endl;
-        sensorA = sensorA;
-
-        std::cout << "\nб) Возврат *this для поддержки цепочки присваиваний:" << std::endl;
-        TemperatureSensor sensorB;
-        TemperatureSensor sensorC;
-        sensorC = sensorB = sensorA;
-        std::cout << "   sensorC после цепочки: " << sensorC.Describe() << std::endl;
-
-        std::cout << "\nв) Передача *this другому объекту (Room::Report(*this)):" << std::endl;
-        Room garage("Гараж");
-        sensorA.AttachToRoom(garage);
+    catch (const std::exception& ex) {
+        std::cout << "  [ОБЩАЯ ОШИБКА]: " << ex.what() << std::endl;
     }
 
-    // =========================================================================
-    // 7. СТАТИЧЕСКИЕ ЧЛЕНЫ КЛАССА
-    // =========================================================================
-    std::cout << "\n=== 7. СТАТИЧЕСКИЕ ЧЛЕНЫ КЛАССА ===" << std::endl;
-    {
-        std::cout << "Текущий счётчик созданных устройств: BaseDevice::GetTotalDevices() = "
-                  << BaseDevice::GetTotalDevices() << std::endl;
-        std::cout << "Генерация следующего ID: BaseDevice::NextId() = "
-                  << BaseDevice::NextId() << std::endl;
+    // Сценарий 6б: Нарушение правила — устройство отключено (DeviceOfflineException)
+    std::cout << "\n--- Сценарий 6б: Отказ устройства (DeviceOfflineException) ---" << std::endl;
+    try {
+        std::cout << "Имитируем обрыв связи: переводим датчик в офлайн..." << std::endl;
+        tempDev.SetOnline(false);
+        tempDev.Ping(); // Вызовет throw DeviceOfflineException
+        std::cout << "Эта строка НЕ выполнится из-за исключения!" << std::endl;
+    }
+    catch (const DeviceOfflineException& ex) { // Частный тип первым!
+        std::cout << "  [CATCH СЕТИ]: Устройство '" << ex.GetDeviceName() 
+                  << "' не ответило! Причина: " << ex.what() << std::endl;
+        std::cout << "  Действие: Система перевела зону в аварийный режим, продолжая работу." << std::endl;
+    }
+    catch (const std::exception& ex) { // Общий тип последним!
+        std::cout << "  [ОБЩИЙ CATCH]: " << ex.what() << std::endl;
     }
 
-    // =========================================================================
-    // 8. РАБОТА СО СТРОКАМИ std::string
-    // =========================================================================
-    std::cout << "\n=== 8. РАБОТА СО СТРОКАМИ std::string ===" << std::endl;
-    StringUtils::DemonstrateStringOperations();
-
-    // =========================================================================
-    // 9. ПОЛИМОРФНЫЙ МАССИВ ДАТЧИКОВ (unique_ptr<BaseDevice>[])
-    // =========================================================================
-    std::cout << "\n=== 9. ПОЛИМОРФНЫЙ МАССИВ std::unique_ptr<BaseDevice> ===" << std::endl;
-    {
-        auto wholeHouse = std::make_shared<Room>("Весь дом");
-
-        std::vector<std::unique_ptr<BaseDevice>> devices;
-        devices.push_back(std::make_unique<TemperatureSensor>("Входной термометр", wholeHouse, 18.0, "SN-T-01"));
-        devices.push_back(std::make_unique<MotionSensor>("Входной радар", wholeHouse, 10));
-        devices.push_back(std::make_unique<TemperatureSensor>("Датчик в гостиной", wholeHouse, 23.5, "SN-T-02"));
-
-        std::cout << "\nОбход полиморфного массива через указатель на базовый класс:" << std::endl;
-        for (const auto& dev : devices) {
-            std::cout << "  • " << dev->Describe() 
-                      << " [Интервал опроса: " << dev->GetPollInterval() << " сек.]" << std::endl;
-        }
-
-        std::cout << "\n-- Очистка массива (автоматическое полиморфное удаление) --" << std::endl;
+    // Сценарий 6в: Нарушение правила — некорректная чувствительность (InvalidParameterException)
+    std::cout << "\n--- Сценарий 6в: Ошибка валидации параметров (InvalidParameterException) ---" << std::endl;
+    try {
+        std::cout << "Попытка установить недопустимую чувствительность радара (значение 99 при норме 1-10)..." << std::endl;
+        motionDev.SetSensitivity(99); // Вызовет throw InvalidParameterException
+    }
+    catch (const InvalidParameterException& ex) {
+        std::cout << "  [CATCH ВАЛИДАЦИИ]: Ошибка в параметре '" << ex.GetParameterName() 
+                  << "'. Подробности: " << ex.what() << std::endl;
+        std::cout << "  Действие: Параметр сброшен к безопасному значению по умолчанию." << std::endl;
+    }
+    catch (const std::exception& ex) {
+        std::cout << "  [ОБЩИЙ CATCH]: " << ex.what() << std::endl;
     }
 
     std::cout << "\n==================================================================" << std::endl;

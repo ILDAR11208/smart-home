@@ -4,69 +4,91 @@ namespace smarthome {
 
 TemperatureSensor::TemperatureSensor()
     : BaseDevice()
-    , m_temperature(20.0)
-    , m_serialNumber("SN-TMP-DEFAULT") {
-    std::cout << "[TemperatureSensor::TemperatureSensor()] Создан датчик по умолчанию" << std::endl;
+    , m_temperature(22.0)
+    , m_serialNumber("SN-TMP-DEFAULT")
+    , m_isActive(true) {
 }
 
 TemperatureSensor::TemperatureSensor(std::string_view name, std::shared_ptr<Room> room, double temp, std::string_view serial)
-    : BaseDevice(name, std::move(room)) // Вызов конструктора базового класса в списке инициализации
+    : BaseDevice(name, std::move(room))
     , m_temperature(temp)
-    , m_serialNumber(serial) {
-    std::cout << "[TemperatureSensor::TemperatureSensor(params)] Создан датчик '" << name 
-              << "', темп=" << m_temperature << ", сер=" << m_serialNumber << std::endl;
+    , m_serialNumber(serial)
+    , m_isActive(true) {
+    if (temp < -50.0 || temp > 100.0) {
+        throw InvalidParameterException("температура", "выходит за допустимый диапазон от -50 до +100 C!");
+    }
 }
 
 TemperatureSensor::TemperatureSensor(const TemperatureSensor& other)
-    : BaseDevice(other) // Глубокое копирование базовой части (включая Room)
+    : BaseDevice(other)
     , m_temperature(other.m_temperature)
-    , m_serialNumber(other.m_serialNumber) {
-    std::cout << "[TemperatureSensor::TemperatureSensor(copy)] Копия датчика температуры" << std::endl;
+    , m_serialNumber(other.m_serialNumber)
+    , m_isActive(other.m_isActive) {
 }
 
 TemperatureSensor::TemperatureSensor(TemperatureSensor&& other) noexcept
     : BaseDevice(std::move(other))
     , m_temperature(other.m_temperature)
-    , m_serialNumber(std::move(other.m_serialNumber)) {
-    other.m_temperature = 0.0;
-    std::cout << "[TemperatureSensor::TemperatureSensor(move)] Перемещение датчика температуры" << std::endl;
+    , m_serialNumber(std::move(other.m_serialNumber))
+    , m_isActive(other.m_isActive) {
 }
 
 TemperatureSensor& TemperatureSensor::operator=(const TemperatureSensor& other) {
-    std::cout << "[TemperatureSensor::operator=] Присваивание датчика температуры" << std::endl;
     if (this == &other) {
         return *this;
     }
-    BaseDevice::operator=(other); // Вызов оператора присваивания базового класса
+    BaseDevice::operator=(other);
     m_temperature = other.m_temperature;
     m_serialNumber = other.m_serialNumber;
+    m_isActive = other.m_isActive;
     return *this;
 }
 
 TemperatureSensor& TemperatureSensor::operator=(TemperatureSensor&& other) noexcept {
-    std::cout << "[TemperatureSensor::operator=(move)] Перемещающее присваивание" << std::endl;
     if (this == &other) {
         return *this;
     }
     BaseDevice::operator=(std::move(other));
     m_temperature = other.m_temperature;
     m_serialNumber = std::move(other.m_serialNumber);
-    other.m_temperature = 0.0;
+    m_isActive = other.m_isActive;
     return *this;
 }
 
-TemperatureSensor::~TemperatureSensor() {
-    std::cout << "[~TemperatureSensor()] Уничтожен датчик температуры" << std::endl;
-}
-
 std::string TemperatureSensor::Describe() const {
-    // ВЫЗОВ базового метода BaseDevice::Describe() и дополнение новыми данными
-    return BaseDevice::Describe() + " -> [Температура: " + std::to_string(m_temperature) 
+    return BaseDevice::Describe() + " -> [Температура: " + std::to_string(m_temperature)
            + " C, S/N: " + m_serialNumber + "]";
 }
 
 std::unique_ptr<BaseDevice> TemperatureSensor::Clone() const {
     return std::make_unique<TemperatureSensor>(*this);
+}
+
+void TemperatureSensor::TurnOn() {
+    m_isActive = true;
+    std::cout << "  [IControllable] Термометр '" << GetName() << "' включён." << std::endl;
+}
+
+void TemperatureSensor::TurnOff() {
+    m_isActive = false;
+    std::cout << "  [IControllable] Термометр '" << GetName() << "' выключен (энергосбережение)." << std::endl;
+}
+
+bool TemperatureSensor::IsActive() const {
+    return m_isActive;
+}
+
+void TemperatureSensor::ExecuteCommand(std::string_view command) {
+    std::cout << "  [IControllable] Термометр '" << GetName() << "' выполнил команду: " << command << std::endl;
+}
+
+void TemperatureSensor::SetTemperature(double temp) {
+    // Проверка правила предметной области: температура датчика должна быть в диапазоне [-50, +100]
+    if (temp < -50.0 || temp > 100.0) {
+        throw InvalidParameterException("температура (" + std::to_string(temp) + ")", 
+                                        "выходит за допустимый диапазон от -50 до +100 C!");
+    }
+    m_temperature = temp;
 }
 
 } // namespace smarthome

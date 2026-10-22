@@ -2,17 +2,19 @@
 #define MOTION_SENSOR_HPP
 
 #include "base_device.hpp"
+#include "icontrollable.hpp"
 
 namespace smarthome {
 
 /// <summary>
 /// Датчик движения.
-/// Модификатор final запрещает дальнейшее наследование от этого класса.
+/// Множественное наследование: BaseDevice + IControllable.
 /// </summary>
-class MotionSensor final : public BaseDevice {
+class MotionSensor : public BaseDevice, public IControllable {
 private:
-    bool m_motionDetected;
-    int m_sensitivity; // Чувствительность (1-10)
+    bool m_motionDetected{ false };
+    int m_sensitivity{ 5 };
+    bool m_armed{ true };
 
 public:
     MotionSensor();
@@ -21,22 +23,31 @@ public:
     MotionSensor(MotionSensor&& other) noexcept;
     MotionSensor& operator=(const MotionSensor& other);
     MotionSensor& operator=(MotionSensor&& other) noexcept;
-    ~MotionSensor() override;
+    ~MotionSensor() noexcept override = default;
 
-    // Реализация чисто виртуального метода базы
-    [[nodiscard]] int GetPollInterval() const override {
-        return 5; // Быстрый опрос движения раз в 5 секунд
+    // Раннее связывание: невиртуальный метод
+    [[nodiscard]] std::string GetDeviceType() const {
+        return "Охранный радар движения";
     }
 
-    // Переопределение метода БЕЗ ВЫЗОВА базового класса (полная замена поведения)
+    // Позднее связывание: виртуальный метод
     [[nodiscard]] std::string Describe() const override;
 
-    // Виртуальный метод клонирования
+    [[nodiscard]] int GetPollInterval() const override { return 5; }
     [[nodiscard]] std::unique_ptr<BaseDevice> Clone() const override;
 
-    [[nodiscard]] bool IsMotionDetected() const { return m_motionDetected; }
-    void SetMotionDetected(bool detected) { m_motionDetected = detected; }
-    [[nodiscard]] int GetSensitivity() const { return m_sensitivity; }
+    // Реализация контракта IControllable
+    void TurnOn() override;
+    void TurnOff() override;
+    [[nodiscard]] bool IsActive() const override;
+    void ExecuteCommand(std::string_view command) override;
+
+    [[nodiscard]] bool IsMotionDetected() const noexcept { return m_motionDetected; }
+    void SetMotionDetected(bool detected) noexcept { m_motionDetected = detected; }
+    [[nodiscard]] int GetSensitivity() const noexcept { return m_sensitivity; }
+
+    // Валидация параметра: чувствительность от 1 до 10
+    void SetSensitivity(int sensitivity);
 };
 
 } // namespace smarthome

@@ -2,51 +2,53 @@
 #define TEMPERATURE_SENSOR_HPP
 
 #include "base_device.hpp"
+#include "icontrollable.hpp"
 
 namespace smarthome {
 
 /// <summary>
-/// Датчик температуры (наследник BaseDevice).
+/// Датчик температуры.
+/// Демонстрация множественного наследования:
+/// Наследуется от абстрактного класса BaseDevice (состояние) и интерфейса IControllable (контракт управления).
 /// </summary>
-class TemperatureSensor : public BaseDevice {
+class TemperatureSensor : public BaseDevice, public IControllable {
 private:
     double m_temperature;
     std::string m_serialNumber;
+    bool m_isActive{ true };
 
 public:
-    // Конструктор по умолчанию
     TemperatureSensor();
-
-    // Конструктор с параметрами (вызывает конструктор базы в списке инициализации)
     TemperatureSensor(std::string_view name, std::shared_ptr<Room> room, double temp, std::string_view serial);
-
-    // Конструктор копирования
     TemperatureSensor(const TemperatureSensor& other);
-
-    // Конструктор перемещения
     TemperatureSensor(TemperatureSensor&& other) noexcept;
-
-    // Операторы присваивания
     TemperatureSensor& operator=(const TemperatureSensor& other);
     TemperatureSensor& operator=(TemperatureSensor&& other) noexcept;
+    ~TemperatureSensor() noexcept override = default;
 
-    // Деструктор
-    ~TemperatureSensor() override;
-
-    // Реализация чисто виртуального метода базы
-    [[nodiscard]] int GetPollInterval() const override {
-        return 30; // Опрос температуры раз в 30 секунд
+    // Раннее связывание: невиртуальный метод скрывает BaseDevice::GetDeviceType
+    [[nodiscard]] std::string GetDeviceType() const {
+        return "Прецизионный термометр";
     }
 
-    // Переопределение метода с ВЫЗОВОМ метода базового класса
+    // Позднее связывание: виртуальный метод переопределяет BaseDevice::Describe
     [[nodiscard]] std::string Describe() const override;
 
-    // Виртуальный метод клонирования (глубокая полиморфная копия)
+    [[nodiscard]] int GetPollInterval() const override { return 30; }
     [[nodiscard]] std::unique_ptr<BaseDevice> Clone() const override;
 
-    [[nodiscard]] double GetTemperature() const { return m_temperature; }
-    void SetTemperature(double temp) { m_temperature = temp; }
-    [[nodiscard]] std::string_view GetSerialNumber() const { return m_serialNumber; }
+    // Реализация контракта интерфейса IControllable
+    void TurnOn() override;
+    void TurnOff() override;
+    [[nodiscard]] bool IsActive() const override;
+    void ExecuteCommand(std::string_view command) override;
+
+    [[nodiscard]] double GetTemperature() const noexcept { return m_temperature; }
+    
+    // Валидация параметра: исключение при недопустимой температуре
+    void SetTemperature(double temp);
+
+    [[nodiscard]] std::string_view GetSerialNumber() const noexcept { return m_serialNumber; }
 };
 
 } // namespace smarthome
