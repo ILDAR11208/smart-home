@@ -1,28 +1,31 @@
-﻿// house.hpp
-#pragma once
+#ifndef HOUSE_HPP
+#define HOUSE_HPP
 
 #include "controller.hpp"
 #include "sensor.hpp"
+#include <memory>
 #include <string>
 #include <string_view>
 
-namespace smarthome
-{
+namespace smarthome {
 
-    class House
-    {
-    private:
-        std::string m_address;
-        Controller m_controller;      // КОМПОЗИЦИЯ: Часть целого (по значению)
-        Sensor* m_linkedSensor;       // АГРЕГАЦИЯ: Ссылка на внешний объект (через указатель)
+class House {
+private:
+    std::string m_address;
+    Controller m_controller;              // Композиция — владение по значению
+    std::weak_ptr<Sensor> m_linkedSensor; // Агрегация — наблюдатель (не владеет)
 
-    public:
-        House(std::string_view address, std::string_view controllerFirmware);
-        ~House();
+public:
+    House(std::string_view address, std::string_view controllerFirmware);
+    ~House();
 
-        // Содержательные методы
-        void BindSensor(Sensor* sensor);
-        void UpdateClimate();
-    };
+    House(const House&) = delete;
+    House& operator=(const House&) = delete;
 
-} // namespace smarthome#pragma once
+    void BindSensor(const std::shared_ptr<Sensor>& sensor);
+    void UpdateClimate();
+};
+
+} // namespace smarthome
+
+#endif // HOUSE_HPP

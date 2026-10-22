@@ -1,27 +1,28 @@
-﻿// controller.hpp
-#pragma once
+#ifndef CONTROLLER_HPP
+#define CONTROLLER_HPP
 
 #include <string>
 #include <string_view>
 
-namespace smarthome
-{
+namespace smarthome {
 
-    class Controller
-    {
-    private:
-        std::string m_firmwareVersion;
-        bool m_hasActiveErrors;
+class Controller {
+private:
+    std::string m_firmwareVersion;
+    bool m_hasActiveErrors;
 
-    public:
-        Controller(std::string_view firmware);
-        ~Controller();
+public:
+    Controller(std::string_view firmware);
+    ~Controller();
 
-        // Содержательные методы
-        void RunDiagnostics();
-        void ProcessData(float sensorValue);
+    Controller(const Controller&) = delete;
+    Controller& operator=(const Controller&) = delete;
 
-        [[nodiscard]] bool HasErrors() const;
-    };
+    void RunDiagnostics();
+    void ProcessData(float sensorValue);
+    bool HasErrors() const;
+};
 
 } // namespace smarthome
+
+#endif // CONTROLLER_HPP
