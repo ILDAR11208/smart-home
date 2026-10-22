@@ -4,11 +4,19 @@
 #include <iostream>
 #include <memory>
 #include <clocale>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 using namespace smarthome;
 
 int main() {
+#ifdef _WIN32
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+#else
     std::setlocale(LC_ALL, "Russian");
+#endif
 
     // ================================================================
     //  1. std::unique_ptr — ЕДИНСТВЕННЫЙ ВЛАДЕЛЕЦ
