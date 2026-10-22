@@ -1,123 +1,134 @@
 #nullable enable
 using System;
-using static System.Math; // Разумное использование using: статические члены без имени класса
-using DeviceList = System.Collections.Generic.List<SmartHome.BaseDevice>; // Псевдоним длинного типа
 using SmartHome;
 
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 
 Console.WriteLine("==================================================================");
-Console.WriteLine("     ЛАБОРАТОРНАЯ РАБОТА № 4: НАСЛЕДОВАНИЕ И ПОЛИМОРФИЗМ (C#)     ");
+Console.WriteLine("       ЛАБОРАТОРНАЯ РАБОТА № 5: ПОЛИМОРФИЗМ И ИНТЕРФЕЙСЫ (C#)     ");
 Console.WriteLine("==================================================================\n");
 
-// =========================================================================
-// 1. ИЕРАРХИЯ КЛАССОВ И ВЫЗОВ КОНСТРУКТОРОВ
-// =========================================================================
-Console.WriteLine("=== 1. ИЕРАРХИЯ КЛАССОВ И ВЫЗОВ КОНСТРУКТОРОВ БАЗЫ ===");
-var kitchen = new Room("Кухня");
-var tempSensor = new TemperatureSensor("Термометр-Кухня", kitchen, 23.5, "SN-TMP-101");
-Console.WriteLine($"-> Создан объект: {tempSensor}");
-Console.WriteLine("   (В конструкторе вызван base(name, room) для базовой части)\n");
+var livingRoom = new Room("Гостиная");
+var bedroom = new Room("Спальня");
 
 // =========================================================================
-// 2. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (override) И sealed
+// 1. ИНТЕРФЕЙС И МНОЖЕСТВЕННОЕ НАСЛЕДОВАНИЕ
 // =========================================================================
-Console.WriteLine("=== 2. ПЕРЕОПРЕДЕЛЕНИЕ МЕТОДОВ (С ВЫЗОВОМ БАЗЫ И БЕЗ) ===");
-var balcony = new Room("Балкон");
-var tempBalcony = new TemperatureSensor("Термометр-Балкон", balcony, -8.0, "SN-TMP-202");
-var motionBalcony = new MotionSensor("Радар-Балкон", balcony, 4);
+Console.WriteLine("=== 1. ИНТЕРФЕЙС И МНОЖЕСТВЕННОЕ НАСЛЕДОВАНИЕ ===");
+Console.WriteLine("Класс TemperatureSensor наследуется от BaseDevice и реализует IControllable, IComparable.");
+Console.WriteLine("Класс MotionSensor наследуется от BaseDevice и реализует IControllable.\n");
 
-Console.WriteLine("\n1) Переопределение С вызовом базового класса (base.Describe()):");
-Console.WriteLine($"   {tempBalcony.Describe()}");
-
-Console.WriteLine("\n2) Переопределение БЕЗ вызова базового класса (полная замена):");
-Console.WriteLine($"   {motionBalcony.Describe()}");
-Console.WriteLine("   (Класс MotionSensor объявлен как sealed — запрет дальнейшего наследования)\n");
+var tempSensor = new TemperatureSensor("Термометр-Зал", livingRoom, 23.5, "SN-T-101");
+var motionSensor = new MotionSensor("Радар-Зал", livingRoom, 6);
 
 // =========================================================================
-// 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ
+// 2. ИСПОЛЬЗОВАНИЕ ИНТЕРФЕЙСА (КОНТРАКТ)
 // =========================================================================
-Console.WriteLine("=== 3. ПОВЕРХНОСТНАЯ И ГЛУБОКАЯ КОПИЯ ===");
+Console.WriteLine("=== 2. ИСПОЛЬЗОВАНИЕ ИНТЕРФЕЙСА (РАБОТА ЧЕРЕЗ КОНТРАКТ) ===");
+var hub = new SmartHub("Контроллер-Сервер", new StandardSecurityPolicy());
 
-// 3а. Поверхностная копия (MemberwiseClone)
-Console.WriteLine("\n--- 3а. Поверхностная копия (ShallowCopy / MemberwiseClone) ---");
-var roomLiving = new Room("Гостиная");
-var sensorOrig = new TemperatureSensor("Оригинал-Датчик", roomLiving, 21.0, "SN-ORIG-01");
-var shallowCopy = sensorOrig.ShallowCopy();
-
-Console.WriteLine($"ДО изменения:      Оригинал={sensorOrig.Room.Name}, Копия={shallowCopy.Room.Name}");
-shallowCopy.RenameRoom("Столовая"); // Меняем комнату у копии
-Console.WriteLine($"ПОСЛЕ изменения:   Оригинал={sensorOrig.Room.Name}, Копия={shallowCopy.Room.Name}");
-Console.WriteLine("-> Обе переменные ссылаются на ОДИН И ТОТ ЖЕ объект Room! Это поверхностная копия.");
-
-// 3б. Глубокая копия
-Console.WriteLine("\n--- 3б. Глубокая копия (DeepCopy) ---");
-var deepCopy = sensorOrig.DeepCopy();
-Console.WriteLine($"ДО изменения:      Оригинал={sensorOrig.Room.Name}, ГлубокаяКопия={deepCopy.Room.Name}");
-deepCopy.RenameRoom("Спальня"); // Меняем комнату у глубокой копии
-Console.WriteLine($"ПОСЛЕ изменения:   Оригинал={sensorOrig.Room.Name}, ГлубокаяКопия={deepCopy.Room.Name}");
-Console.WriteLine("-> Оригинал НЕ изменился! У копии собственный экземпляр Room. Это глубокая копия.\n");
+hub.SendEmergencyCommand(tempSensor, "CALIBRATE_ZERO");
+hub.SendEmergencyCommand(motionSensor, "SET_GUARD_MODE");
 
 // =========================================================================
-// 4. СРАВНЕНИЕ ПО СОДЕРЖИМОМУ (Equals и GetHashCode)
+// 3. РАННЕЕ И ПОЗДНЕЕ СВЯЗЫВАНИЕ (new vs override)
 // =========================================================================
-Console.WriteLine("=== 4. СРАВНЕНИЕ ПО СОДЕРЖИМОМУ (Equals и GetHashCode) ===");
-var s1 = new TemperatureSensor("Датчик А", new Room("Зал"), 20.0, "SN-777");
-var s2 = new TemperatureSensor("Датчик Б (другое имя и комната)", new Room("Склад"), 25.0, "SN-777");
-var s3 = new TemperatureSensor("Датчик В", new Room("Зал"), 20.0, "SN-888");
+Console.WriteLine("\n=== 3. РАННЕЕ И ПОЗДНЕЕ СВЯЗЫВАНИЕ (new vs override) ===");
+BaseDevice polyDevice = new MotionSensor("Охранный-Радар", bedroom, 8);
 
-Console.WriteLine($"  s1 == s2 (по ссылкам): {ReferenceEquals(s1, s2)} (разные объекты)");
-Console.WriteLine($"  s1.Equals(s2) (по серийному номеру): {s1.Equals(s2)} (совпадает S/N)");
-Console.WriteLine($"  s1.Equals(s3) (по серийному номеру): {s1.Equals(s3)} (разные S/N)");
-Console.WriteLine($"  Хеш-коды: s1={s1.GetHashCode()}, s2={s2.GetHashCode()}, s3={s3.GetHashCode()}\n");
+// Раннее связывание (метод скрыт словом new):
+Console.WriteLine("Вызов через переменную базового типа BaseDevice:");
+Console.WriteLine($"  1) Невиртуальный метод (new): \"{polyDevice.GetDeviceType()}\"");
+Console.WriteLine("     -> Выбрана версия BaseDevice, так как выбор сделан на этапе компиляции (раннее связывание)!");
 
-// =========================================================================
-// 5. ИСПОЛЬЗОВАНИЕ this И СТАТИЧЕСКИЕ ЧЛЕНЫ
-// =========================================================================
-Console.WriteLine("=== 5. ИСПОЛЬЗОВАНИЕ this И СТАТИЧЕСКИЕ ЧЛЕНЫ ===");
-// Вызов другого конструктора через : this(...)
-var defaultSensor = new TemperatureSensor("Датчик-Авто", new Room("Коридор"));
-Console.WriteLine($"  Конструктор по умолчанию через this: {defaultSensor}");
-
-// Передача this в другой метод
-var garage = new Room("Гараж");
-defaultSensor.AttachToRoom(garage);
-
-// Статические члены
-Console.WriteLine($"  Всего создано устройств (BaseDevice.TotalDevices): {BaseDevice.TotalDevices}");
-Console.WriteLine($"  Следующий номер (BaseDevice.NextId()): {BaseDevice.NextId()}\n");
+// Позднее связывание (override):
+Console.WriteLine($"  2) Виртуальный метод (override): \"{polyDevice.Describe()}\"");
+Console.WriteLine("     -> Выбрана версия MotionSensor по фактическому типу объекта во время работы (позднее связывание)!\n");
 
 // =========================================================================
-// 6. РАЗУМНОЕ ИСПОЛЬЗОВАНИЕ using
+// 4. ПРОВЕРКА ТИПА (is и as)
 // =========================================================================
-Console.WriteLine("=== 6. РАЗУМНОЕ ИСПОЛЬЗОВАНИЕ using ===");
-// using static (использован в начале файла: using static System.Math)
-double roundedTemp = Round(23.456, 1); // Math.Round без имени класса
-Console.WriteLine($"  using static: Round(23.456, 1) = {roundedTemp}");
+Console.WriteLine("=== 4. ПРОВЕРКА ТИПА (is и as) ===");
+var display = new PassiveDisplay("Инфо-Табло-01", livingRoom, "Температура: +23.5 C");
 
-// using var (автоматический вызов Dispose в конце области видимости)
+Console.WriteLine("Попытка переключить устройство с поддержкой IControllable:");
+hub.TryToggleDevice(polyDevice);
+
+Console.WriteLine("\nПопытка переключить пассивное табло:");
+hub.TryToggleDevice(display);
+
+// =========================================================================
+// 5. КОНФИГУРИРОВАНИЕ ОБЪЕКТА (ОБЪЕКТ ПОВЕДЕНИЯ)
+// =========================================================================
+Console.WriteLine("\n=== 5. КОНФИГУРИРОВАНИЕ ОБЪЕКТА (ОБЪЕКТ ПОВЕДЕНИЯ) ===");
+Console.WriteLine("-- 5.1. Статическое конфигурирование (задано при создании) --");
+hub.RaiseAlarm("Входная дверь", 2);
+
+Console.WriteLine("\n-- 5.2. Динамическое конфигурирование (смена во время работы) --");
+hub.SetPolicy(new StrictSecurityPolicy());
+hub.RaiseAlarm("Окно спальни", 5);
+
+hub.SetPolicy(new SilentSecurityPolicy());
+hub.RaiseAlarm("Движение во дворе", 1);
+Console.WriteLine("-> Поведение хаба меняется за счет подстановки разных объектов поведения!\n");
+
+// =========================================================================
+// 6. СТАНДАРТНЫЙ ИНТЕРФЕЙС IComparable<T>
+// =========================================================================
+Console.WriteLine("=== 6. СТАНДАРТНЫЙ ИНТЕРФЕЙС IComparable<T> (СОРТИРОВКА) ===");
+var sensors = new TemperatureSensor[]
 {
-    using var log = new DeviceLog("Системный аудит");
-    log.Log("Зафиксировано превышение температуры на 1.5 градуса.");
-    log.Log("Команда климат-контроля отправлена.");
-}
-
-// =========================================================================
-// 7. ПОЛИМОРФНЫЙ СПИСОК (псевдоним DeviceList)
-// =========================================================================
-Console.WriteLine("\n=== 7. ПОЛИМОРФНЫЙ СПИСОК (DeviceList) ===");
-var house = new Room("Коттедж");
-var devices = new DeviceList
-{
-    new TemperatureSensor("Термометр холла", house, 21.5, "SN-H-01"),
-    new MotionSensor("Датчик движения холла", house, 7),
-    new TemperatureSensor("Термометр кухни", house, 24.0, "SN-K-02")
+    new TemperatureSensor("Термометр-Балкон", livingRoom, -5.5, "SN-03"),
+    new TemperatureSensor("Термометр-Гостиная", livingRoom, 24.0, "SN-01"),
+    new TemperatureSensor("Термометр-Серверная", livingRoom, 18.2, "SN-02")
 };
 
-Console.WriteLine("Обход устройств через абстрактный базовый класс BaseDevice:");
-foreach (var device in devices)
+Console.WriteLine("Список датчиков ДО сортировки:");
+foreach (var s in sensors) Console.WriteLine($"  {s.Name}: {s.Temperature:F1} C");
+
+Array.Sort(sensors); // Сортировка использует IComparable<TemperatureSensor>
+
+Console.WriteLine("\nСписок датчиков ПОСЛЕ сортировки (Array.Sort по возрастанию температуры):");
+foreach (var s in sensors) Console.WriteLine($"  {s.Name}: {s.Temperature:F1} C");
+
+// =========================================================================
+// 7. ИСКЛЮЧЕНИЯ ПРЕДМЕТНОЙ ОБЛАСТИ И БЛОК finally
+// =========================================================================
+Console.WriteLine("\n=== 7. ИСКЛЮЧЕНИЯ ПРЕДМЕТНОЙ ОБЛАСТИ (try / catch / finally) ===");
+
+// 7а. Исключение DeviceOfflineException
+Console.WriteLine("\n--- 7а. Ошибка сети (DeviceOfflineException) ---");
+try
 {
-    Console.WriteLine($"  • {device.Describe()} [Интервал опроса: {device.PollInterval} сек.]");
+    tempSensor.IsOnline = false; // Отключаем
+    Console.WriteLine("Опрашиваем отключенный датчик через Ping()...");
+    tempSensor.Ping();
+}
+catch (DeviceOfflineException ex)
+{
+    Console.WriteLine($"  [CATCH СЕТИ]: Перехвачено исключение для '{ex.DeviceName}'!");
+    Console.WriteLine($"  Сообщение: {ex.Message}");
+}
+finally
+{
+    Console.WriteLine("  [FINALLY]: Блок завершения выполнен (гарантированное освобождение ресурсов при любом исходе).");
+}
+
+// 7б. Исключение InvalidParameterException
+Console.WriteLine("\n--- 7б. Ошибка валидации (InvalidParameterException) ---");
+try
+{
+    Console.WriteLine("Попытка установить температуру 150 C (выше нормы)...");
+    tempSensor.Temperature = 150.0;
+}
+catch (InvalidParameterException ex)
+{
+    Console.WriteLine($"  [CATCH ПАРАМЕТРА]: Перехвачена ошибка валидации '{ex.ParameterName}'!");
+    Console.WriteLine($"  Сообщение: {ex.Message}");
+}
+finally
+{
+    Console.WriteLine("  [FINALLY]: Проверка параметров завершена.");
 }
 
 Console.WriteLine("\n==================================================================");

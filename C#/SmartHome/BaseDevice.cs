@@ -4,7 +4,7 @@ using System;
 namespace SmartHome;
 
 /// <summary>
-/// Абстрактный базовый класс устройства умного дома.
+/// Абстрактный базовый класс устройства (по маске Base*).
 /// </summary>
 public abstract class BaseDevice
 {
@@ -13,36 +13,36 @@ public abstract class BaseDevice
     public int Id { get; protected set; }
     public string Name { get; protected set; }
     public Room Room { get; set; }
+    public bool IsOnline { get; set; } = true;
 
     public static int NextId() => ++_deviceCounter;
-    public static int TotalDevices => _deviceCounter;
-
-    // Модификатор protected: метод нужен наследникам, но закрыт снаружи
-    protected string Header() => $"[ID {Id}] {Name} (Комната: {Room.Name})";
 
     protected BaseDevice(string name, Room room)
     {
         Id = NextId();
         Name = name;
         Room = room;
-        Console.WriteLine($"[BaseDevice] Конструктор базы '{Name}' ID={Id}");
     }
 
-    // Чисто виртуальный метод / свойство
-    public abstract int PollInterval { get; }
+    protected string Header() =>
+        $"[ID {Id}] {Name} ({Room.Name}, {(IsOnline ? "Онлайн" : "ОФЛАЙН")})";
 
-    // Виртуальный метод с реализацией по умолчанию
+    // Раннее связывание: невиртуальный метод базового класса
+    public string GetDeviceType() => "Базовое устройство умного дома";
+
+    // Позднее связывание: виртуальный метод
     public virtual string Describe() => $"{Header()}, опрос каждые {PollInterval} сек.";
 
-    // Демонстрация this: передача текущего объекта другому объекту
-    public void AttachToRoom(Room room)
-    {
-        room.Report(this); // передача this
-    }
+    public abstract int PollInterval { get; }
 
-    public void RenameRoom(string newName)
+    // Проверка правила предметной области: устройство должно быть онлайн
+    public void Ping()
     {
-        Room.Name = newName;
+        if (!IsOnline)
+        {
+            throw new DeviceOfflineException(Name, "устройство не отвечает на пинг-запросы!");
+        }
+        Console.WriteLine($"  [Ping OK] Устройство '{Name}' успешно ответило.");
     }
 
     public override string ToString() => Describe();
